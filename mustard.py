@@ -180,9 +180,6 @@ annual_processing_cost = processing_cost_total * prod_days * 12
 annual_variable_cost = variable_cost_total * prod_days * 12
 annual_other_expenses = other_expenses * prod_days * 12
 
-# Interest Calculation (12% p.a. on WC + Capex)
-# Working Capital section is below, so interest is calculated after total_wc is calculated
-
 # --- Working Capital & Warehouse Financing ---
 st.header("Working Capital & Warehouse Financing")
 
@@ -228,13 +225,15 @@ creditors = daily_seed_consumption * creditors_days * seed_price
 # Inventory
 total_inventory = rm_hoarded_val + rm_safety_stock_val + fg_oil_inventory + fg_moc_inventory
 
-# Total Working Capital
-total_wc = total_inventory + total_debtors - creditors
+# Company-funded RM (excluding financed)
+rm_company_val = rm_hoarded_qty * (1 - financed_pct / 100) * hoarded_rm_rate
 
-# Interest Calculation (12% p.a. on WC + Capex)
-annual_interest = (total_wc + capex) * 0.12
-monthly_interest = annual_interest / 12
-daily_interest = annual_interest / (12 * prod_days)
+# Total Working Capital
+total_wc_incl_financed = total_inventory + total_debtors - creditors
+total_wc_excl_financed = rm_company_val + rm_safety_stock_val + fg_oil_inventory + fg_moc_inventory + total_debtors - creditors
+
+# Interest Calculation (12% p.a. on WC including financed + Capex)
+annual_interest = (total_wc_incl_financed + capex) * 0.12
 
 # Depreciation
 annual_depreciation = depreciation * 12
@@ -271,25 +270,29 @@ with colB:
 with colC:
     st.metric("Inventory (₹ Cr)", format_cr(total_inventory))
 with colD:
-    st.metric("Total Working Capital (₹ Cr)", format_cr(total_wc))
+    st.metric("Total Working Capital (₹ Cr)", format_cr(total_wc_incl_financed))
 
 st.markdown("---")
 
-st.header("ROCE Calculation")
-roce_numerator = annual_ebitda - annual_depreciation - annual_interest
-roce_denominator = capex + total_wc + other_assets
-roce_percent = (roce_numerator / roce_denominator) * 100 if roce_denominator else 0
+st.header("ROCE Analysis")
 
-st.markdown(f"""
-- **EBITDA (Annual):** {format_cr(annual_ebitda)}
-- **Depreciation (Annual):** {format_cr(annual_depreciation)}
-- **Interest (Annual):** {format_cr(annual_interest)}
-- **Annual PBT:** {format_cr(annual_pbt)}
-- **Capex:** {format_cr(capex)}
-- **Working Capital:** {format_cr(total_wc)}
-- **Other Assets:** {format_cr(other_assets)}
-- **ROCE (%):** **{roce_percent:.2f}%**
-""")
+# ROCE (Including 80% Financed RM as Capital)
+roce_pbt_incl_financed = (annual_pbt / (capex + total_wc_incl_financed + other_assets)) * 100 if (capex + total_wc_incl_financed + other_assets) else 0
+roce_ebitda_incl_financed = (annual_ebitda / (capex + total_wc_incl_financed + other_assets)) * 100 if (capex + total_wc_incl_financed + other_assets) else 0
+
+# ROCE (Excluding 80% Financed RM as Capital)
+roce_pbt_excl_financed = (annual_pbt / (capex + total_wc_excl_financed + other_assets)) * 100 if (capex + total_wc_excl_financed + other_assets) else 0
+roce_ebitda_excl_financed = (annual_ebitda / (capex + total_wc_excl_financed + other_assets)) * 100 if (capex + total_wc_excl_financed + other_assets) else 0
+
+st.markdown("#### ROCE (Including 80% Financed RM as Capital)")
+st.write(f"**ROCE (PBT):** {roce_pbt_incl_financed:.2f}%")
+st.write(f"**ROCE (EBITDA):** {roce_ebitda_incl_financed:.2f}%")
+
+st.markdown("#### ROCE (Excluding 80% Financed RM as Capital)")
+st.write(f"**ROCE (PBT):** {roce_pbt_excl_financed:.2f}%")
+st.write(f"**ROCE (EBITDA):** {roce_ebitda_excl_financed:.2f}%")
 
 st.info("All calculations update in real time as you change inputs. All numbers are shown in ₹ Cr for clarity.")
+
+
 
