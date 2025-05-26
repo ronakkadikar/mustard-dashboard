@@ -16,7 +16,6 @@ def format_inr(n):
 
 st.set_page_config(page_title="Mustard Plant Dashboard", layout="wide")
 
-# --- Soft blue background, no image ---
 st.markdown("""
     <style>
     .stApp {
@@ -139,19 +138,31 @@ moc_revenue = enhanced_moc * moc_sell_price
 # --- Section: Costing & Margins ---
 processing_cost = st.number_input("Processing Cost (₹/MT)", min_value=0.0, value=1300.0, format="%.2f")
 other_variable_costs = st.number_input("Other Variable Costs (₹/MT)", min_value=0.0, value=2300.0, format="%.2f")
+other_expenses = st.number_input("Other Expenses (₹/day)", min_value=0.0, value=0.0, format="%.2f")
 
-# COGS Calculation
-cogs_ops = (seed_input * seed_price) + (market_oil * market_oil_price) + (seed_input * processing_cost) + (seed_input * other_variable_costs)
-cogs_moc_enhance = moc_enhance_cost
-cogs_total = cogs_ops + cogs_moc_enhance
+# COGS Calculation (Seed, Market Oil, MoC Enhancement)
+cogs = (seed_input * seed_price) + (market_oil * market_oil_price) + moc_enhance_cost
+cogs_percent = (cogs / (oil_blend_revenue + exp_oil_revenue + moc_revenue) * 100) if (oil_blend_revenue + exp_oil_revenue + moc_revenue) else 0
 
-expenses = seed_input * (processing_cost + other_variable_costs)
+# GM Calculation
+gm = oil_blend_revenue + exp_oil_revenue + moc_revenue - cogs
+gm_percent = (gm / (oil_blend_revenue + exp_oil_revenue + moc_revenue) * 100) if (oil_blend_revenue + exp_oil_revenue + moc_revenue) else 0
 
-total_revenue = oil_blend_revenue + exp_oil_revenue + moc_revenue
-gross_margin = total_revenue - cogs_total
-gm_percent = (gross_margin / total_revenue) * 100 if total_revenue else 0
-contribution_margin = gross_margin  # Placeholder for now
-cm_percent = gm_percent
+# Processing Cost Calculation
+processing_cost_total = seed_input * processing_cost
+processing_cost_percent = (processing_cost_total / (oil_blend_revenue + exp_oil_revenue + moc_revenue) * 100) if (oil_blend_revenue + exp_oil_revenue + moc_revenue) else 0
+
+# CM Calculation
+cm = gm - processing_cost_total
+cm_percent = (cm / (oil_blend_revenue + exp_oil_revenue + moc_revenue) * 100) if (oil_blend_revenue + exp_oil_revenue + moc_revenue) else 0
+
+# Variable Cost Calculation
+variable_cost_total = seed_input * other_variable_costs
+variable_cost_percent = (variable_cost_total / (oil_blend_revenue + exp_oil_revenue + moc_revenue) * 100) if (oil_blend_revenue + exp_oil_revenue + moc_revenue) else 0
+
+# EBITDA Calculation
+ebitda = cm - variable_cost_total - other_expenses
+ebitda_percent = (ebitda / (oil_blend_revenue + exp_oil_revenue + moc_revenue) * 100) if (oil_blend_revenue + exp_oil_revenue + moc_revenue) else 0
 
 # --- Monthly & Annual Projections ---
 prod_days = st.number_input("Production Days per Month", min_value=1, value=24)
@@ -161,39 +172,16 @@ st.markdown(f"**Depreciation (₹/month):** {depreciation:,.0f}")
 tax_rate = st.number_input("Tax Rate (%)", min_value=0.0, max_value=100.0, value=25.0, format="%.2f")
 other_assets = st.number_input("Other Assets (₹)", min_value=0.0, value=0.0, format="%.2f")
 
-monthly_revenue = total_revenue * prod_days
-monthly_cogs = cogs_total * prod_days
-monthly_expenses = expenses * prod_days
-monthly_gross_margin = gross_margin * prod_days
-monthly_ebitda = monthly_gross_margin - depreciation
-monthly_ebit = monthly_ebitda
-monthly_pbt = monthly_ebit
-monthly_tax = monthly_pbt * (tax_rate / 100)
-monthly_pat = monthly_pbt - monthly_tax
+# Annualization
+annual_gm = gm * prod_days * 12
+annual_cm = cm * prod_days * 12
+annual_ebitda = ebitda * prod_days * 12
+annual_processing_cost = processing_cost_total * prod_days * 12
+annual_variable_cost = variable_cost_total * prod_days * 12
+annual_other_expenses = other_expenses * prod_days * 12
 
-annual_revenue = monthly_revenue * 12
-annual_cogs = monthly_cogs * 12
-annual_expenses = monthly_expenses * 12
-annual_gross_margin = monthly_gross_margin * 12
-annual_ebitda = monthly_ebitda * 12
-annual_ebit = monthly_ebit * 12
-annual_pbt = monthly_pbt * 12
-annual_pat = monthly_pat * 12
-
-gm_percent_annual = (annual_gross_margin / annual_revenue) * 100 if annual_revenue else 0
-cogs_percent = (cogs_total / total_revenue) * 100 if total_revenue else 0
-expenses_percent = (expenses / total_revenue) * 100 if total_revenue else 0
-gm_percent_daily = gm_percent
-cogs_percent_annual = (annual_cogs / annual_revenue) * 100 if annual_revenue else 0
-expenses_percent_annual = (annual_expenses / annual_revenue) * 100 if annual_revenue else 0
-
-ebitda_percent = (monthly_ebitda / monthly_revenue * 100) if monthly_revenue else 0
-pbt_percent = (monthly_pbt / monthly_revenue * 100) if monthly_revenue else 0
-pat_percent = (monthly_pat / monthly_revenue * 100) if monthly_revenue else 0
-
-ebitda_percent_annual = (annual_ebitda / annual_revenue * 100) if annual_revenue else 0
-pbt_percent_annual = (annual_pbt / annual_revenue * 100) if annual_revenue else 0
-pat_percent_annual = (annual_pat / annual_revenue * 100) if annual_revenue else 0
+# Interest Calculation (12% p.a. on WC + Capex)
+# Working Capital section is below, so interest is calculated after total_wc is calculated
 
 # --- Working Capital & Warehouse Financing ---
 st.header("Working Capital & Warehouse Financing")
@@ -213,8 +201,6 @@ with col16:
 with col17:
     debtor_oil_days = st.number_input("Oil Debtor Cycle (days)", min_value=0, value=5)
     debtor_moc_days = st.number_input("MoC Debtor Cycle (days)", min_value=0, value=5)
-
-# Working Capital Calculations
 
 daily_seed_consumption = seed_input
 monthly_seed_consumption = daily_seed_consumption * prod_days
@@ -245,62 +231,33 @@ total_inventory = rm_hoarded_val + rm_safety_stock_val + fg_oil_inventory + fg_m
 # Total Working Capital
 total_wc = total_inventory + total_debtors - creditors
 
-# Interest Cost (unchanged)
-rm_financed = rm_hoarded_qty * (financed_pct / 100)
-interest_cost = (rm_financed * hoarded_rm_rate) * (warehouse_int_rate / 100) * (hoard_months / 12)
+# Interest Calculation (12% p.a. on WC + Capex)
+annual_interest = (total_wc + capex) * 0.12
+monthly_interest = annual_interest / 12
+daily_interest = annual_interest / (12 * prod_days)
 
-# --- ROCE Calculation ---
-roce_numerator = annual_ebit
-roce_denominator = capex + total_wc + other_assets
-roce_percent = (roce_numerator / roce_denominator) * 100 if roce_denominator else 0
+# Depreciation
+annual_depreciation = depreciation * 12
+
+# Annual PBT
+annual_pbt = annual_ebitda - annual_depreciation - annual_interest
 
 # --- OUTPUT SECTION ---
 
-st.header("Key Financials (All values in ₹ Cr unless otherwise specified)")
+st.header("Margin Analysis (All values in ₹ Cr unless otherwise specified)")
+st.markdown("#### Daily | Monthly | Annual")
 
-col1, col2 = st.columns([2,1])
-
-with col1:
-    st.markdown("### Daily, Monthly, Annual Margin Calculation")
-
-    st.write(f"**Daily Revenue:** {format_cr(total_revenue)}")
-    st.write(f"**Monthly Revenue:** {format_cr(total_revenue * prod_days)}")
-    st.write(f"**Annual Revenue:** {format_cr(total_revenue * prod_days * 12)}")
-    st.write("---")
-
-    st.write(f"**COGS (Daily):** {format_cr(cogs_total)} ({(cogs_total/total_revenue*100) if total_revenue else 0:.2f}%)")
-    st.write(f"**COGS (Monthly):** {format_cr(cogs_total * prod_days)} ({(cogs_total * prod_days / (total_revenue * prod_days) * 100) if total_revenue else 0:.2f}%)")
-    st.write(f"**COGS (Annual):** {format_cr(cogs_total * prod_days * 12)} ({(cogs_total * prod_days * 12 / (total_revenue * prod_days * 12) * 100) if total_revenue else 0:.2f}%)")
-    st.write(f"**Expenses (Daily):** {format_cr(expenses)} ({(expenses/total_revenue*100) if total_revenue else 0:.2f}%)")
-    st.write(f"**Expenses (Monthly):** {format_cr(expenses * prod_days)} ({(expenses * prod_days / (total_revenue * prod_days) * 100) if total_revenue else 0:.2f}%)")
-    st.write(f"**Expenses (Annual):** {format_cr(expenses * prod_days * 12)} ({(expenses * prod_days * 12 / (total_revenue * prod_days * 12) * 100) if total_revenue else 0:.2f}%)")
-    st.write("---")
-
-    # GM
-    st.write(f"**Gross Margin (GM) (Daily):** {format_cr(gross_margin)}  ({gm_percent:.2f}%)")
-    st.write(f"**Gross Margin (GM) (Monthly):** {format_cr(gross_margin * prod_days)}  ({gm_percent:.2f}%)")
-    st.write(f"**Gross Margin (GM) (Annual):** {format_cr(gross_margin * prod_days * 12)}  ({gm_percent:.2f}%)")
-    # CM
-    st.write(f"**Contribution Margin (CM) (Daily):** {format_cr(contribution_margin)}  ({cm_percent:.2f}%)")
-    st.write(f"**Contribution Margin (CM) (Monthly):** {format_cr(contribution_margin * prod_days)}  ({cm_percent:.2f}%)")
-    st.write(f"**Contribution Margin (CM) (Annual):** {format_cr(contribution_margin * prod_days * 12)}  ({cm_percent:.2f}%)")
-    # EBITDA
-    st.write(f"**EBITDA (Daily):** {format_cr(gross_margin - depreciation / prod_days)}  ({((gross_margin - depreciation / prod_days) / total_revenue * 100) if total_revenue else 0:.2f}%)")
-    st.write(f"**EBITDA (Monthly):** {format_cr(monthly_ebitda)}  ({ebitda_percent:.2f}%)")
-    st.write(f"**EBITDA (Annual):** {format_cr(annual_ebitda)}  ({ebitda_percent_annual:.2f}%)")
-
-with col2:
-    st.markdown("### Revenue Breakdown")
-    st.write(f"**Kachi Ghani Oil Output (MT):** {kg_oil:.2f}")
-    st.write(f"**Expeller Oil Output (MT):** {exp_oil:.2f}")
-    st.write(f"**Oil Blend Revenue:** {format_cr(oil_blend_revenue)}")
-    st.write(f"**Expeller Oil Revenue:** {format_cr(exp_oil_revenue)}")
-    st.write(f"**MoC Output (MT):** {enhanced_moc:.2f}")
-    st.write(f"**MoC Revenue:** {format_cr(moc_revenue)}")
-    st.write("---")
-    st.write(f"**Total Revenue:** {format_cr(total_revenue)}")
-    st.write("---")
-    st.markdown(f"<span style='font-size:12px;'>MoC Cost from Ops: {format_cr(cogs_ops)}<br>Enhancement Cost: {format_cr(cogs_moc_enhance)}</span>", unsafe_allow_html=True)
+st.write(f"**Revenue:** {format_cr(oil_blend_revenue + exp_oil_revenue + moc_revenue)} | {format_cr((oil_blend_revenue + exp_oil_revenue + moc_revenue) * prod_days)} | {format_cr((oil_blend_revenue + exp_oil_revenue + moc_revenue) * prod_days * 12)}")
+st.write(f"**COGS:** {format_cr(cogs)} ({cogs_percent:.2f}%) | {format_cr(cogs * prod_days)} | {format_cr(cogs * prod_days * 12)}")
+st.write(f"**GM:** {format_cr(gm)} ({gm_percent:.2f}%) | {format_cr(gm * prod_days)} | {format_cr(annual_gm)}")
+st.write(f"**Processing Cost:** {format_cr(processing_cost_total)} ({processing_cost_percent:.2f}%) | {format_cr(processing_cost_total * prod_days)} | {format_cr(annual_processing_cost)}")
+st.write(f"**CM:** {format_cr(cm)} ({cm_percent:.2f}%) | {format_cr(cm * prod_days)} | {format_cr(annual_cm)}")
+st.write(f"**Variable Cost:** {format_cr(variable_cost_total)} ({variable_cost_percent:.2f}%) | {format_cr(variable_cost_total * prod_days)} | {format_cr(annual_variable_cost)}")
+st.write(f"**Other Expenses:** {format_cr(other_expenses)} | {format_cr(other_expenses * prod_days)} | {format_cr(annual_other_expenses)}")
+st.write(f"**EBITDA:** {format_cr(ebitda)} ({ebitda_percent:.2f}%) | {format_cr(ebitda * prod_days)} | {format_cr(annual_ebitda)}")
+st.write(f"**Interest (Annual):** {format_cr(annual_interest)}")
+st.write(f"**Depreciation (Annual):** {format_cr(annual_depreciation)}")
+st.write(f"**Annual PBT:** {format_cr(annual_pbt)}")
 
 st.markdown("---")
 
@@ -319,8 +276,15 @@ with colD:
 st.markdown("---")
 
 st.header("ROCE Calculation")
+roce_numerator = annual_ebitda - annual_depreciation - annual_interest
+roce_denominator = capex + total_wc + other_assets
+roce_percent = (roce_numerator / roce_denominator) * 100 if roce_denominator else 0
+
 st.markdown(f"""
-- **EBIT (Annual):** {format_cr(roce_numerator)}
+- **EBITDA (Annual):** {format_cr(annual_ebitda)}
+- **Depreciation (Annual):** {format_cr(annual_depreciation)}
+- **Interest (Annual):** {format_cr(annual_interest)}
+- **Annual PBT:** {format_cr(annual_pbt)}
 - **Capex:** {format_cr(capex)}
 - **Working Capital:** {format_cr(total_wc)}
 - **Other Assets:** {format_cr(other_assets)}
