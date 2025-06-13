@@ -69,14 +69,16 @@ with st.sidebar:
         logistics_saved_per_ton = st.number_input("Logistics Saved (₹/Ton of MOC)", value=400)
         labor_saved_nos = st.number_input("Labor Headcount Saved (Daily)", value=4)
         labor_cost_per_head_daily = st.number_input("Cost per Labor Head (₹/Day)", value=550)
-        brokerage_saved_per_ton = st.number_input("Brokerage Saved (₹/Ton of MOC)", value=25)
+        brokerage_saved_per_ton = st.number_input("Brokerage Saved (₹/Ton of MOC)", value=150)
 
 # --- Calculation Engine (Triple-Verified & Final) ---
 @st.cache_data
 def calculate_all_metrics(inputs):
-    for key, value in inputs.items(): locals()[key] = value
+    # Unpack all inputs
+    for key, value in inputs.items(): globals()[key] = value
+    
     kachi_ghani_yield, expeller_yield = kachi_ghani_yield_pct/100, expeller_yield_pct/100
-    moc_base_yield, min_pungency_req = 1-(kachi_ghani_yield+expeller_yield), 0.27
+    moc_base_yield, min_pungency_req = 1-(kachi_ghani_yield+expeller_yield), 0.2700
     kachi_ghani_oil_produced_mt, expeller_oil_produced_mt = seed_input_mt*kachi_ghani_yield, seed_input_mt*expeller_yield
     total_produced_oil = kachi_ghani_oil_produced_mt + expeller_oil_produced_mt
     initial_blend_pungency = (kachi_ghani_oil_produced_mt * kachi_ghani_pungency + expeller_oil_produced_mt * expeller_oil_pungency) / total_produced_oil if total_produced_oil > 0 else 0
@@ -97,13 +99,13 @@ def calculate_all_metrics(inputs):
     enhanced_moc_mt = (seed_input_mt * moc_base_yield) + water_added_mt + salt_added_mt
     daily_revenue_oil_blend, daily_revenue_expeller_separate, daily_revenue_moc = final_oil_blend_mt*oil_blend_sell_price, exp_oil_sold_separately_mt*expeller_oil_sell_price, enhanced_moc_mt*moc_sell_price
     daily_total_revenue = daily_revenue_oil_blend + daily_revenue_expeller_separate + daily_revenue_moc
-    cost_moc_enhancement = (water_added_mt*1000*water_cost_per_kg) + (salt_added_mt*1000*salt_cost_per_kg)
-    daily_cogs = (seed_input_mt*seed_purchase_price) + (market_oil_to_add_mt*market_bought_oil_price) + cost_moc_enhancement
+    daily_cogs = (seed_input_mt*seed_purchase_price) + (market_oil_to_add_mt*market_bought_oil_price) + (water_added_mt*1000*water_cost_per_kg) + (salt_added_mt*1000*salt_cost_per_kg)
     daily_gm, daily_processing_cost = daily_total_revenue - daily_cogs, seed_input_mt*processing_cost_per_mt
     daily_cm, daily_variable_cost = daily_gm - daily_processing_cost, seed_input_mt*other_variable_costs_per_mt
     daily_ebitda = daily_cm - daily_variable_cost - other_expenses_daily
     monthly_seed_consumption = seed_input_mt * production_days_per_month
-    rm_hoarded_value, rm_safety_stock_value = monthly_seed_consumption*rm_hoard_months*hoarded_rm_rate, seed_input_mt*rm_safety_stock_days*seed_purchase_price
+    rm_hoarded_value = monthly_seed_consumption*rm_hoard_months*hoarded_rm_rate
+    rm_safety_stock_value = seed_input_mt*rm_safety_stock_days*seed_purchase_price
     inventory_rm = rm_hoarded_value + rm_safety_stock_value
     total_daily_oil_revenue, total_daily_oil_qty = daily_revenue_oil_blend+daily_revenue_expeller_separate, final_oil_blend_mt+exp_oil_sold_separately_mt
     avg_oil_price = total_daily_oil_revenue/total_daily_oil_qty if total_daily_oil_qty > 0 else 0
@@ -111,22 +113,29 @@ def calculate_all_metrics(inputs):
     inventory_fg = fg_oil_inventory_value + fg_moc_inventory_value
     total_inventory = inventory_rm + inventory_fg
     debtors_oil, debtors_moc = total_daily_oil_revenue*oil_debtor_days, daily_revenue_moc*moc_debtor_days
-    total_debtors, trade_creditors = debtors_oil + debtors_moc, seed_input_mt*seed_purchase_price*creditor_days
+    total_debtors = debtors_oil + debtors_moc
+    trade_creditors = seed_input_mt*seed_purchase_price*creditor_days
     financed_rm_hoard_value = rm_hoarded_value*(rm_hoard_financed_pct/100)
     gross_wc = total_inventory + total_debtors - trade_creditors
     net_wc_requirement = gross_wc - financed_rm_hoard_value
     annual_production_days = production_days_per_month * 12
     annual_ebitda = daily_ebitda * annual_production_days
-    interest_on_hoard = financed_rm_hoard_value*(warehouse_finance_rate_pa/100)
-    interest_on_main_capital = (net_wc_requirement + capex)*(main_financing_rate_pa/100)
+    
+    # --- VERIFIED Interest Calculation ---
+    interest_on_hoard = financed_rm_hoard_value * (warehouse_finance_rate_pa/100)
+    interest_on_main_capital = (capex + net_wc_requirement) * (main_financing_rate_pa/100)
     annual_interest = interest_on_hoard + interest_on_main_capital
+    
     annual_depreciation = capex/depreciation_years if depreciation_years > 0 else 0
     annual_pbt = annual_ebitda - annual_depreciation - annual_interest
     annual_tax = max(0, annual_pbt * (tax_rate_pct/100))
     annual_pat = annual_pbt - annual_tax
+    
+    # --- VERIFIED ROCE Calculation ---
     capital_employed = capex + net_wc_requirement + other_assets
     roce_pat = (annual_pat / capital_employed) * 100 if capital_employed != 0 else 0
     roce_ebitda = (annual_ebitda / capital_employed) * 100 if capital_employed != 0 else 0
+    
     moc_consumed_inhouse_mt = enhanced_moc_mt*(moc_consumed_perc/100)
     daily_logistics_saving, daily_labor_saving, daily_brokerage_saving = moc_consumed_inhouse_mt*logistics_saved_per_ton, labor_saved_nos*labor_cost_per_head_daily, moc_consumed_inhouse_mt*brokerage_saved_per_ton
     daily_solvex_saving = daily_logistics_saving + daily_labor_saving + daily_brokerage_saving
@@ -163,38 +172,27 @@ st.divider()
 
 st.subheader("Financial & Operational Analysis")
 
-# --- FIX: Definitive Session State logic for keeping the active tab ---
-if 'active_tab' not in st.session_state:
-    st.session_state.active_tab = "📊 Daily View"
-
-# Use st.radio for stateful tab-like navigation
-selected_tab = st.radio(
-    "Select View:",
-    options=["📊 Daily View", "📅 Monthly View", "🗓️ Annual View"],
-    key='active_tab',
-    horizontal=True,
-    label_visibility="collapsed"
-)
+selected_tab = st.radio("Select View:", options=["📊 Daily View", "📅 Monthly View", "🗓️ Annual View"], key='active_tab', horizontal=True, label_visibility="collapsed")
 
 def display_pnl(period_multiplier, period_name):
     st.markdown(f"##### Production & Revenue ({period_name})")
     c1, c2, c3, c4 = st.columns(4)
-    c1.markdown(f"**Total Seed Input:**<br> <p style='font-size: 20px;'>{format_indian(metrics['seed_input_mt'] * period_multiplier)} MT</p>", unsafe_allow_html=True)
-    c2.markdown(f"**Oil Blend:**<br> <p style='font-size: 20px;'>{format_indian(metrics['final_oil_blend_mt'] * period_multiplier)} MT</p>", unsafe_allow_html=True)
-    c3.markdown(f"**Enhanced MoC:**<br> <p style='font-size: 20px;'>{format_indian(metrics['enhanced_moc_mt'] * period_multiplier)} MT</p>", unsafe_allow_html=True)
-    c4.markdown(f"**Total Revenue:**<br> <p style='font-size: 20px;'>₹ {format_indian(metrics['daily_total_revenue'] * period_multiplier)}</p>", unsafe_allow_html=True)
+    c1.markdown(f"**Total Seed Input:**<br><p style='font-size: 20px;'>{format_indian(metrics['seed_input_mt'] * period_multiplier)} MT</p>", unsafe_allow_html=True)
+    c2.markdown(f"**Oil Blend:**<br><p style='font-size: 20px;'>{format_indian(metrics['final_oil_blend_mt'] * period_multiplier)} MT</p>", unsafe_allow_html=True)
+    c3.markdown(f"**Enhanced MoC:**<br><p style='font-size: 20px;'>{format_indian(metrics['enhanced_moc_mt'] * period_multiplier)} MT</p>", unsafe_allow_html=True)
+    c4.markdown(f"**Total Revenue:**<br><p style='font-size: 20px;'>₹ {format_indian(metrics['daily_total_revenue'] * period_multiplier)}</p>", unsafe_allow_html=True)
     st.markdown("---")
     
     st.markdown(f"##### Full Margin Analysis ({period_name})")
     col1, col2 = st.columns(2)
-    daily_total_revenue = metrics['daily_total_revenue']
+    total_revenue_for_period = metrics['daily_total_revenue'] * period_multiplier
     with col1:
         gm = metrics['daily_gm'] * period_multiplier
         cm = metrics['daily_cm'] * period_multiplier
         ebitda = metrics['daily_ebitda'] * period_multiplier
-        st.markdown(f"**Gross Margin (GM):** <br>₹ {format_indian(gm)} `({(gm/(daily_total_revenue*period_multiplier)*100 if daily_total_revenue > 0 else 0):.1f}%)`", unsafe_allow_html=True)
-        st.markdown(f"**Contribution Margin (CM):** ❓<br>₹ {format_indian(cm)} `({(cm/(daily_total_revenue*period_multiplier)*100 if daily_total_revenue > 0 else 0):.1f}%)`", unsafe_allow_html=True, help=f"CM = GM - Processing Cost (₹ {format_indian(metrics['daily_processing_cost']*period_multiplier)})")
-        st.markdown(f"**EBITDA:** ❓<br>₹ {format_indian(ebitda)} `({(ebitda/(daily_total_revenue*period_multiplier)*100 if daily_total_revenue > 0 else 0):.1f}%)`", unsafe_allow_html=True, help=f"EBITDA = CM - Other Var. Costs (₹ {format_indian(metrics['daily_variable_cost']*period_multiplier)}) - Other Fixed Exp. (₹ {format_indian(metrics['daily_other_expenses']*period_multiplier)})")
+        st.markdown(f"**Gross Margin (GM):** <br>₹ {format_indian(gm)} `({(gm/total_revenue_for_period*100 if total_revenue_for_period > 0 else 0):.1f}%)`", unsafe_allow_html=True)
+        st.markdown(f"**Contribution Margin (CM):** ❓<br>₹ {format_indian(cm)} `({(cm/total_revenue_for_period*100 if total_revenue_for_period > 0 else 0):.1f}%)`", unsafe_allow_html=True, help=f"CM = GM - Processing Cost (₹ {format_indian(metrics['daily_processing_cost']*period_multiplier)})")
+        st.markdown(f"**EBITDA:** ❓<br>₹ {format_indian(ebitda)} `({(ebitda/total_revenue_for_period*100 if total_revenue_for_period > 0 else 0):.1f}%)`", unsafe_allow_html=True, help=f"EBITDA = CM - Other Var. Costs (₹ {format_indian(metrics['daily_variable_cost']*period_multiplier)}) - Other Fixed Exp. (₹ {format_indian(metrics['daily_other_expenses']*period_multiplier)})")
     
     with col2:
         daily_dep = metrics['annual_depreciation'] / metrics['annual_production_days'] if metrics['annual_production_days'] > 0 else 0
@@ -206,11 +204,11 @@ def display_pnl(period_multiplier, period_name):
         pat = pbt - tax
         st.markdown(f"**Depreciation:**<br>₹ {format_indian(depreciation_for_period)}", unsafe_allow_html=True)
         st.markdown(f"**Interest:**<br>₹ {format_indian(interest_for_period)}", unsafe_allow_html=True)
-        st.markdown(f"**Profit Before Tax (PBT):**<br>₹ {format_indian(pbt)} `({(pbt/(daily_total_revenue*period_multiplier)*100 if daily_total_revenue > 0 else 0):.1f}%)`", unsafe_allow_html=True)
-        st.markdown(f"**Profit After Tax (PAT):**<br>₹ {format_indian(pat)} `({(pat/(daily_total_revenue*period_multiplier)*100 if daily_total_revenue > 0 else 0):.1f}%)`", unsafe_allow_html=True)
+        st.markdown(f"**Profit Before Tax (PBT):**<br>₹ {format_indian(pbt)} `({(pbt/total_revenue_for_period*100 if total_revenue_for_period > 0 else 0):.1f}%)`", unsafe_allow_html=True)
+        st.markdown(f"**Profit After Tax (PAT):**<br>₹ {format_indian(pat)} `({(pat/total_revenue_for_period*100 if total_revenue_for_period > 0 else 0):.1f}%)`", unsafe_allow_html=True)
     st.markdown("---")
     
-    st.markdown(f"##### Return on Capital Employed (ROCE)")
+    st.markdown(f"##### Key Financial Ratios")
     c1, c2 = st.columns(2)
     with c1:
         st.markdown("**Standard ROCE**")
@@ -221,7 +219,6 @@ def display_pnl(period_multiplier, period_name):
         st.metric("ROCE (PAT Basis)", f"{metrics['roce_pat_with_synergy']:.2f}%")
         st.metric("ROCE (EBITDA Basis)", f"{metrics['roce_ebitda_with_synergy']:.2f}%")
 
-# Display content based on the selected radio button
 if selected_tab == "📊 Daily View":
     display_pnl(1, "Daily")
 elif selected_tab == "📅 Monthly View":
@@ -235,12 +232,12 @@ wc_col, savings_col = st.columns(2)
 with wc_col:
     st.subheader("Working Capital & Capex Breakdown")
     c1, c2, c3 = st.columns(3)
-    c1.markdown(f"**Total Inventory:**<br> <p style='font-size: 20px;'>₹ {format_indian(metrics['total_inventory'])}</p>", unsafe_allow_html=True)
-    c2.markdown(f"**Total Debtors:**<br> <p style='font-size: 20px;'>₹ {format_indian(metrics['total_debtors'])}</p>", unsafe_allow_html=True)
-    c3.markdown(f"**Trade Creditors:**<br> <p style='font-size: 20px;'>₹ {format_indian(metrics['trade_creditors'])}</p>", unsafe_allow_html=True)
-    st.markdown(f"**Financed Inventory (Credit):**<br> <p style='font-size: 20px; color: #FF4B4B;'>₹ {format_indian(metrics['financed_rm_hoard_value'])}</p>", unsafe_allow_html=True, help="This is treated as a credit, reducing your net WC requirement.")
-    st.markdown(f"**Net Working Capital Requirement:**<br> <p style='font-size: 24px; font-weight: bold;'>₹ {format_indian(metrics['net_wc_requirement'])}</p>", unsafe_allow_html=True)
-    st.markdown(f"**Capex:**<br> <p style='font-size: 24px; font-weight: bold;'>₹ {format_indian(metrics['capex'])}</p>", unsafe_allow_html=True)
+    c1.markdown(f"**Total Inventory:**<br><p style='font-size: 20px;'>₹ {format_indian(metrics['total_inventory'])}</p>", unsafe_allow_html=True)
+    c2.markdown(f"**Total Debtors:**<br><p style='font-size: 20px;'>₹ {format_indian(metrics['total_debtors'])}</p>", unsafe_allow_html=True)
+    c3.markdown(f"**Trade Creditors:**<br><p style='font-size: 20px;'>₹ {format_indian(metrics['trade_creditors'])}</p>", unsafe_allow_html=True)
+    st.markdown(f"**Financed Inventory (Credit):**<br><p style='font-size: 20px; color: #FF4B4B;'>₹ {format_indian(metrics['financed_rm_hoard_value'])}</p>", unsafe_allow_html=True, help="This is treated as a credit, reducing your net WC requirement.")
+    st.markdown(f"**Net WC Requirement:**<br><p style='font-size: 24px; font-weight: bold;'>₹ {format_indian(metrics['net_wc_requirement'])}</p>", unsafe_allow_html=True)
+    st.markdown(f"**Capex:**<br><p style='font-size: 24px; font-weight: bold;'>₹ {format_indian(metrics['capex'])}</p>", unsafe_allow_html=True)
 
 with savings_col:
     st.subheader("🏭 Solvex Plant Synergy")
@@ -249,15 +246,15 @@ with savings_col:
 
 with st.expander("ℹ️ Click here to see key calculation logic"):
     st.markdown("""
-    - **Net Working Capital Requirement:** This reflects the actual capital the business must fund.
-      - `Net WC Requirement = (Total Inventory + Total Debtors - Trade Creditors) - Financed Inventory`
-    - **Interest Calculation:** Annual interest is calculated using two separate rates for precision.
+    - **Net Working Capital Requirement:** `Net WC = (Total Inventory + Total Debtors - Trade Creditors) - Financed Inventory`
+    - **Interest Calculation:** 
       - `Interest on Hoard = Financed Inventory Value * Warehouse Finance Rate`
       - `Interest on Main Capital = (Capex + Net WC Requirement) * Main Financing Rate`
-      - `Total Annual Interest` is the sum of these two components.
-    - **ROCE:** Calculated on an annualized basis. `Capital Employed = Capex + Net WC Requirement + Other Assets`.
+      - `Total Annual Interest` is the sum of these two components. This assumes the entire capital base (except the specifically financed hoard) has an average financing cost.
+    - **Return on Capital Employed (ROCE):** Measures operational efficiency.
+      - `Capital Employed = Capex + Net WC Requirement + Other Assets`
       - `Standard ROCE (PAT) = Annual PAT / Capital Employed`
-      - `ROCE with Synergy (PAT) = (Annual PAT + Annual Solvex Savings) / Capital Employed`
+    - **Synergy Impact:** `ROCE with Synergy` adds the `Annual Solvex Savings` to the numerator (PAT or EBITDA).
     """)
 
 # --- Code Completion Marker ---
