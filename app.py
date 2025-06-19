@@ -202,33 +202,7 @@ st.subheader("Financial & Operational Analysis")
 selected_tab = st.radio("Select View:", options=["📊 Daily View", "📅 Monthly View", "🗓️ Annual View"], key='active_tab', horizontal=True, label_visibility="collapsed")
 
 def display_pnl(period_multiplier, period_name):
-    st.markdown(f"##### Production & Revenue ({period_name})")
-    c1, c2, c3, c4 = st.columns(4)
-    c1.markdown(f"**Total Seed Input:**<br> <p style='font-size: 20px;'>{format_indian(metrics['seed_input_mt'] * period_multiplier)} MT</p>", unsafe_allow_html=True)
-    c2.markdown(f"**Oil Blend:**<br> <p style='font-size: 20px;'>{format_indian(metrics['final_oil_blend_mt'] * period_multiplier)} MT</p>", unsafe_allow_html=True)
-    c3.markdown(f"**Enhanced MoC:**<br> <p style='font-size: 20px;'>{format_indian(metrics['enhanced_moc_mt'] * period_multiplier)} MT</p>", unsafe_allow_html=True)
-    c4.markdown(f"**Total Revenue:**<br> <p style='font-size: 20px;'>₹ {format_indian(metrics['daily_total_revenue'] * period_multiplier)}</p>", unsafe_allow_html=True)
-    st.markdown("---")
-    
-    st.markdown(f"##### Cost of Goods Sold (COGS) Breakdown ({period_name})")
-    c1, c2 = st.columns(2)
-    with c1:
-        st.markdown("**Component Quantities**")
-        st.markdown(f"- Seed Consumed: {format_indian(metrics['seed_input_mt'] * period_multiplier)} MT")
-        st.markdown(f"- Market Oil Added: {format_indian(metrics['market_oil_to_add_mt'] * period_multiplier)} MT")
-        st.markdown(f"- Water Added: {format_indian(metrics['water_added_mt'] * period_multiplier)} MT")
-        st.markdown(f"- Salt Added: {format_indian(metrics['salt_added_mt'] * period_multiplier)} MT")
-    with col2:
-        st.markdown("**Component Values**")
-        st.markdown(f"- Seed Cost: ₹ {format_indian(metrics['cost_seed'] * period_multiplier)}")
-        st.markdown(f"- Market Oil Cost: ₹ {format_indian(metrics['cost_market_oil'] * period_multiplier)}")
-        st.markdown(f"- MoC Enhancement Cost: ₹ {format_indian(metrics['cost_moc_enhancement'] * period_multiplier)}")
-        st.markdown(f"**Total COGS: ₹ {format_indian(metrics['daily_cogs'] * period_multiplier)}**")
-    st.markdown("---")
-
-    st.markdown(f"##### Full Margin Analysis ({period_name})")
-    
-    # --- DEFINITIVE FIX for UnboundLocalError: All calculations are now done *before* the columns are created ---
+    # --- DEFINITIVE FIX for UnboundLocalError: All calculations are done *before* any display logic ---
     total_revenue_for_period = metrics['daily_total_revenue'] * period_multiplier
     gm = metrics['daily_gm'] * period_multiplier
     cm = metrics['daily_cm'] * period_multiplier
@@ -245,12 +219,41 @@ def display_pnl(period_multiplier, period_name):
     tax = max(0, pbt * (metrics['tax_rate_pct']/100))
     pat = pbt - tax
     
-    col1, col2 = st.columns(2)
-    with col1:
+    interest_on_main_capital_period = metrics['interest_on_main_capital'] / metrics['annual_production_days'] * period_multiplier if metrics['annual_production_days'] > 0 else 0
+    interest_on_hoard_period = metrics['interest_on_hoard'] / metrics['annual_production_days'] * period_multiplier if metrics['annual_production_days'] > 0 else 0
+
+    # --- Display Logic: Uses pre-calculated variables ---
+    st.markdown(f"##### Production & Revenue ({period_name})")
+    rev_c1, rev_c2, rev_c3, rev_c4 = st.columns(4)
+    rev_c1.markdown(f"**Total Seed Input:**<br> <p style='font-size: 20px;'>{format_indian(metrics['seed_input_mt'] * period_multiplier)} MT</p>", unsafe_allow_html=True)
+    rev_c2.markdown(f"**Oil Blend:**<br> <p style='font-size: 20px;'>{format_indian(metrics['final_oil_blend_mt'] * period_multiplier)} MT</p>", unsafe_allow_html=True)
+    rev_c3.markdown(f"**Enhanced MoC:**<br> <p style='font-size: 20px;'>{format_indian(metrics['enhanced_moc_mt'] * period_multiplier)} MT</p>", unsafe_allow_html=True)
+    rev_c4.markdown(f"**Total Revenue:**<br> <p style='font-size: 20px;'>₹ {format_indian(total_revenue_for_period)}</p>", unsafe_allow_html=True)
+    st.markdown("---")
+    
+    st.markdown(f"##### Cost of Goods Sold (COGS) Breakdown ({period_name})")
+    cogs_c1, cogs_c2 = st.columns(2)
+    with cogs_c1:
+        st.markdown("**Component Quantities**")
+        st.markdown(f"- Seed Consumed: {format_indian(metrics['seed_input_mt'] * period_multiplier)} MT")
+        st.markdown(f"- Market Oil Added: {format_indian(metrics['market_oil_to_add_mt'] * period_multiplier)} MT")
+        st.markdown(f"- Water Added: {format_indian(metrics['water_added_mt'] * period_multiplier)} MT")
+        st.markdown(f"- Salt Added: {format_indian(metrics['salt_added_mt'] * period_multiplier)} MT")
+    with cogs_c2:
+        st.markdown("**Component Values**")
+        st.markdown(f"- Seed Cost: ₹ {format_indian(metrics['cost_seed'] * period_multiplier)}")
+        st.markdown(f"- Market Oil Cost: ₹ {format_indian(metrics['cost_market_oil'] * period_multiplier)}")
+        st.markdown(f"- MoC Enhancement Cost: ₹ {format_indian(metrics['cost_moc_enhancement'] * period_multiplier)}")
+        st.markdown(f"**Total COGS: ₹ {format_indian(metrics['daily_cogs'] * period_multiplier)}**")
+    st.markdown("---")
+
+    st.markdown(f"##### Full Margin Analysis ({period_name})")
+    margin_c1, margin_c2 = st.columns(2)
+    with margin_c1:
         st.markdown(f"**Gross Margin (GM):** <br>₹ {format_indian(gm)} `({(gm/total_revenue_for_period*100 if total_revenue_for_period > 0 else 0):.1f}%)`", unsafe_allow_html=True)
         st.markdown(f"**Contribution Margin (CM):** ❓<br>₹ {format_indian(cm)} `({(cm/total_revenue_for_period*100 if total_revenue_for_period > 0 else 0):.1f}%)`", unsafe_allow_html=True, help=f"CM = GM - Processing Cost (₹ {format_indian(metrics['daily_processing_cost']*period_multiplier)})")
         st.markdown(f"**EBITDA:** ❓<br>₹ {format_indian(ebitda)} `({(ebitda/total_revenue_for_period*100 if total_revenue_for_period > 0 else 0):.1f}%)`", unsafe_allow_html=True, help=f"EBITDA = CM - Other Var. Costs (₹ {format_indian(metrics['daily_variable_cost']*period_multiplier)}) - Other Fixed Exp. (₹ {format_indian(metrics['daily_other_expenses']*period_multiplier)})")
-    with col2:
+    with margin_c2:
         st.markdown(f"**Depreciation:**<br>₹ {format_indian(depreciation_for_period)}", unsafe_allow_html=True)
         st.markdown(f"**EBIT (Earnings Before Interest & Tax):**<br>₹ {format_indian(ebit_for_period)}", unsafe_allow_html=True)
         st.markdown(f"**Interest:**<br>₹ {format_indian(interest_for_period)}", unsafe_allow_html=True)
@@ -259,19 +262,17 @@ def display_pnl(period_multiplier, period_name):
     st.markdown("---")
     
     st.markdown(f"##### Interest Calculation Breakdown ({period_name})")
-    interest_on_main_capital_period = metrics['interest_on_main_capital'] / metrics['annual_production_days'] * period_multiplier if metrics['annual_production_days'] > 0 else 0
-    interest_on_hoard_period = metrics['interest_on_hoard'] / metrics['annual_production_days'] * period_multiplier if metrics['annual_production_days'] > 0 else 0
     st.markdown(f"- **Main Capital Financed (Debt Funded Capex + Net WC):** ₹ {format_indian(metrics['main_capital_to_finance'])} -> **Interest:** ₹ {format_indian(interest_on_main_capital_period)}")
     st.markdown(f"- **Financed RM Hoard:** ₹ {format_indian(metrics['financed_rm_hoard_value'])} -> **Interest:** ₹ {format_indian(interest_on_hoard_period)}")
     st.markdown("---")
 
     st.markdown(f"##### Key Financial Ratios (Annualized)")
-    c1, c2 = st.columns(2)
-    with c1:
+    roce_c1, roce_c2 = st.columns(2)
+    with roce_c1:
         st.markdown("**Standard ROCE**")
         st.metric("ROCE (EBIT Basis)", f"{metrics['roce_ebit']:.2f}%")
         st.metric("ROCE (PAT Basis)", f"{metrics['roce_pat']:.2f}%")
-    with c2:
+    with roce_c2:
         st.markdown("**ROCE including Solvex Synergy**")
         st.metric("ROCE (EBIT Basis)", f"{metrics['roce_ebit_with_synergy']:.2f}%")
         st.metric("ROCE (PAT Basis)", f"{metrics['roce_pat_with_synergy']:.2f}%")
@@ -285,14 +286,14 @@ st.divider()
 wc_col, savings_col = st.columns(2)
 with wc_col:
     st.subheader("Working Capital & Capex Breakdown")
-    c1, c2, c3 = st.columns(3)
-    c1.markdown(f"**Total Inventory:**<br><p style='font-size: 20px;'>₹ {format_indian(metrics['total_inventory'])}</p>", unsafe_allow_html=True)
-    c2.markdown(f"**Total Debtors:**<br><p style='font-size: 20px;'>₹ {format_indian(metrics['total_debtors'])}</p>", unsafe_allow_html=True)
-    c3.markdown(f"**Trade Creditors:**<br><p style='font-size: 20px;'>₹ {format_indian(metrics['trade_creditors'])}</p>", unsafe_allow_html=True)
+    wc_c1, wc_c2, wc_c3 = st.columns(3)
+    wc_c1.markdown(f"**Total Inventory:**<br><p style='font-size: 20px;'>₹ {format_indian(metrics['total_inventory'])}</p>", unsafe_allow_html=True)
+    wc_c2.markdown(f"**Total Debtors:**<br><p style='font-size: 20px;'>₹ {format_indian(metrics['total_debtors'])}</p>", unsafe_allow_html=True)
+    wc_c3.markdown(f"**Trade Creditors:**<br><p style='font-size: 20px;'>₹ {format_indian(metrics['trade_creditors'])}</p>", unsafe_allow_html=True)
     st.markdown("---")
-    c1, c2 = st.columns(2)
-    c1.markdown(f"**Raw Material Inventory:**<br><p style='font-size: 20px;'>₹ {format_indian(metrics['inventory_rm'])}</p>", unsafe_allow_html=True)
-    c2.markdown(f"**Finished Goods Stock:**<br><p style='font-size: 20px;'>₹ {format_indian(metrics['inventory_fg'])}</p>", unsafe_allow_html=True)
+    inv_c1, inv_c2 = st.columns(2)
+    inv_c1.markdown(f"**Raw Material Inventory:**<br><p style='font-size: 20px;'>₹ {format_indian(metrics['inventory_rm'])}</p>", unsafe_allow_html=True)
+    inv_c2.markdown(f"**Finished Goods Stock:**<br><p style='font-size: 20px;'>₹ {format_indian(metrics['inventory_fg'])}</p>", unsafe_allow_html=True)
     st.markdown(f"**Financed Inventory (Credit):**<br><p style='font-size: 20px; color: #FF4B4B;'>₹ {format_indian(metrics['financed_rm_hoard_value'])}</p>", unsafe_allow_html=True, help="This is treated as a credit, reducing your net WC requirement.")
     st.markdown(f"**Net WC Requirement:**<br><p style='font-size: 24px; font-weight: bold;'>₹ {format_indian(metrics['net_wc_requirement'])}</p>", unsafe_allow_html=True)
     st.markdown(f"**Capex:**<br><p style='font-size: 24px; font-weight: bold;'>₹ {format_indian(metrics['capex'])}</p>", unsafe_allow_html=True)
