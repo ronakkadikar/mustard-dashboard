@@ -125,12 +125,12 @@ def calculate_all_metrics(inputs):
     annual_production_days = production_days_per_month * 12
     annual_ebitda = daily_ebitda * annual_production_days
     
-    # --- VERIFIED & TRANSPARENT Interest Calculation ---
+    # --- CORRECTED Interest Calculation to prevent double-counting ---
     debt_funded_capex = capex * (1 - equity_in_capex_pct/100)
-    interest_on_capex_debt = debt_funded_capex * (main_financing_rate_pa/100)
+    main_capital_to_finance = debt_funded_capex + net_wc_requirement
+    interest_on_main_capital = main_capital_to_finance * (main_financing_rate_pa/100)
     interest_on_hoard = financed_rm_hoard_value * (warehouse_finance_rate_pa/100)
-    interest_on_net_wc = net_wc_requirement * (main_financing_rate_pa/100)
-    annual_interest = interest_on_capex_debt + interest_on_hoard + interest_on_net_wc
+    annual_interest = interest_on_main_capital + interest_on_hoard
     
     annual_depreciation = capex/depreciation_years if depreciation_years > 0 else 0
     annual_ebit = annual_ebitda - annual_depreciation
@@ -165,8 +165,7 @@ def calculate_all_metrics(inputs):
         "daily_solvex_saving": daily_solvex_saving,
         "market_oil_to_add_mt": market_oil_to_add_mt, "water_added_mt": water_added_mt, "salt_added_mt": salt_added_mt,
         "cost_seed": cost_seed, "cost_market_oil": cost_market_oil, "cost_moc_enhancement": cost_moc_enhancement,
-        "interest_on_hoard": interest_on_hoard, "interest_on_capex_debt": interest_on_capex_debt, "interest_on_net_wc": interest_on_net_wc,
-        "debt_funded_capex": debt_funded_capex,
+        "interest_on_hoard": interest_on_hoard, "interest_on_main_capital": interest_on_main_capital, "main_capital_to_finance": main_capital_to_finance,
         "inventory_rm": inventory_rm, "inventory_fg": inventory_fg
     }
 
@@ -260,12 +259,10 @@ def display_pnl(period_multiplier, period_name):
     st.markdown("---")
     
     st.markdown(f"##### Interest Calculation Breakdown ({period_name})")
-    interest_on_capex_debt_period = metrics['interest_on_capex_debt'] / metrics['annual_production_days'] * period_multiplier if metrics['annual_production_days'] > 0 else 0
+    interest_on_main_capital_period = metrics['interest_on_main_capital'] / metrics['annual_production_days'] * period_multiplier if metrics['annual_production_days'] > 0 else 0
     interest_on_hoard_period = metrics['interest_on_hoard'] / metrics['annual_production_days'] * period_multiplier if metrics['annual_production_days'] > 0 else 0
-    interest_on_net_wc_period = metrics['interest_on_net_wc'] / metrics['annual_production_days'] * period_multiplier if metrics['annual_production_days'] > 0 else 0
-    st.markdown(f"- **Debt Funded Capex:** ₹ {format_indian(metrics['debt_funded_capex'])} -> **Interest:** ₹ {format_indian(interest_on_capex_debt_period)}")
+    st.markdown(f"- **Main Capital Financed (Debt Funded Capex + Net WC):** ₹ {format_indian(metrics['main_capital_to_finance'])} -> **Interest:** ₹ {format_indian(interest_on_main_capital_period)}")
     st.markdown(f"- **Financed RM Hoard:** ₹ {format_indian(metrics['financed_rm_hoard_value'])} -> **Interest:** ₹ {format_indian(interest_on_hoard_period)}")
-    st.markdown(f"- **Net WC Requirement:** ₹ {format_indian(metrics['net_wc_requirement'])} -> **Interest:** ₹ {format_indian(interest_on_net_wc_period)}")
     st.markdown("---")
 
     st.markdown(f"##### Key Financial Ratios (Annualized)")
@@ -308,12 +305,12 @@ with st.expander("ℹ️ Click here to see key calculation logic"):
     st.markdown("""
     - **Cost of Goods Sold (COGS):** `COGS = Seed Cost + Market Oil Cost + MoC Enhancement Cost`
     - **Net Working Capital Requirement:** `Net WC = (Total Inventory + Total Debtors - Trade Creditors) - Financed Inventory`
-    - **Interest Calculation:** 
+    - **Interest Calculation (No Double-Counting):** 
       - `Debt Funded Capex = Capex * (1 - Equity %)`
-      - `Interest on Capex Debt = Debt Funded Capex * Main Financing Rate`
-      - `Interest on Net WC = Net WC Requirement * Main Financing Rate`
+      - `Main Capital to Finance = Debt Funded Capex + Net WC Requirement`
+      - `Interest on Main Capital = Main Capital to Finance * Main Financing Rate`
       - `Interest on Hoard = Financed RM Value * Warehouse Finance Rate`
-      - `Total Annual Interest` is the sum of these three components.
+      - `Total Annual Interest` is the sum of these two main components.
     - **Return on Capital Employed (ROCE):** Measures operational efficiency. `EBIT = EBITDA - Depreciation`.
       - `Capital Employed = Capex + Net WC Requirement + Other Assets`
       - `Standard ROCE (EBIT Basis) = Annual EBIT / Capital Employed`
