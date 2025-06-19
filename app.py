@@ -49,7 +49,8 @@ with st.sidebar:
         salt_cost_per_kg = st.number_input("Salt Cost (₹/kg)", value=5.0)
     with st.expander("Capex, Tax & Financing", expanded=True):
         capex = st.number_input("Capex (₹)", value=200000000.0)
-        depreciation_years = st.number_input("Depreciation Period (Years)", min_value=1, value=15.0)
+        # FIX: Ensure value is of type int or matches min_value type
+        depreciation_years = st.number_input("Depreciation Period (Years)", min_value=1, value=15)
         tax_rate_pct = st.slider("Tax Rate (%)", 0, 50, 25)
         other_assets = st.number_input("Other Assets (₹)", value=0.0)
         warehouse_finance_rate_pa = st.slider("Warehouse Finance Interest Rate (% p.a.)", 0.0, 25.0, 10.0, help="Interest for financed RM Hoard")
@@ -203,10 +204,10 @@ selected_tab = st.radio("Select View:", options=["📊 Daily View", "📅 Monthl
 def display_pnl(period_multiplier, period_name):
     st.markdown(f"##### Production & Revenue ({period_name})")
     c1, c2, c3, c4 = st.columns(4)
-    c1.markdown(f"**Total Seed Input:**<br><p style='font-size: 20px;'>{format_indian(metrics['seed_input_mt'] * period_multiplier)} MT</p>", unsafe_allow_html=True)
-    c2.markdown(f"**Oil Blend:**<br><p style='font-size: 20px;'>{format_indian(metrics['final_oil_blend_mt'] * period_multiplier)} MT</p>", unsafe_allow_html=True)
-    c3.markdown(f"**Enhanced MoC:**<br><p style='font-size: 20px;'>{format_indian(metrics['enhanced_moc_mt'] * period_multiplier)} MT</p>", unsafe_allow_html=True)
-    c4.markdown(f"**Total Revenue:**<br><p style='font-size: 20px;'>₹ {format_indian(metrics['daily_total_revenue'] * period_multiplier)}</p>", unsafe_allow_html=True)
+    c1.markdown(f"**Total Seed Input:**<br> <p style='font-size: 20px;'>{format_indian(metrics['seed_input_mt'] * period_multiplier)} MT</p>", unsafe_allow_html=True)
+    c2.markdown(f"**Oil Blend:**<br> <p style='font-size: 20px;'>{format_indian(metrics['final_oil_blend_mt'] * period_multiplier)} MT</p>", unsafe_allow_html=True)
+    c3.markdown(f"**Enhanced MoC:**<br> <p style='font-size: 20px;'>{format_indian(metrics['enhanced_moc_mt'] * period_multiplier)} MT</p>", unsafe_allow_html=True)
+    c4.markdown(f"**Total Revenue:**<br> <p style='font-size: 20px;'>₹ {format_indian(metrics['daily_total_revenue'] * period_multiplier)}</p>", unsafe_allow_html=True)
     st.markdown("---")
     
     # --- NEW: Cost of Goods Sold (COGS) Breakdown Section ---
@@ -304,4 +305,3 @@ with st.expander("ℹ️ Click here to see key calculation logic"):
 # --- Code Completion Marker ---
 st.markdown("---")
 st.success("Dashboard code is complete and has been fully executed.")
-
