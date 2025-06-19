@@ -230,7 +230,7 @@ def display_pnl(period_multiplier, period_name):
     st.markdown(f"##### Full Margin Analysis ({period_name})")
     total_revenue_for_period = metrics['daily_total_revenue'] * period_multiplier
     
-    # --- FIX for UnboundLocalError ---
+    # --- DEFINITIVE FIX for UnboundLocalError ---
     # Calculate all margin variables before creating columns
     gm = metrics['daily_gm'] * period_multiplier
     cm = metrics['daily_cm'] * period_multiplier
@@ -240,6 +240,7 @@ def display_pnl(period_multiplier, period_name):
     daily_int = metrics['annual_interest'] / metrics['annual_production_days'] if metrics['annual_production_days'] > 0 else 0
     depreciation_for_period = daily_dep * period_multiplier
     interest_for_period = daily_int * period_multiplier
+    
     ebit_for_period = ebitda - depreciation_for_period
     pbt = ebit_for_period - interest_for_period
     tax = max(0, pbt * (metrics['tax_rate_pct']/100))
@@ -320,4 +321,3 @@ with st.expander("ℹ️ Click here to see key calculation logic"):
     """)
 st.markdown("---")
 st.success("Dashboard code is complete and has been fully executed.")
-
