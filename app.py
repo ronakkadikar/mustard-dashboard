@@ -228,17 +228,17 @@ def display_pnl(period_multiplier, period_name):
     st.markdown("---")
 
     st.markdown(f"##### Full Margin Analysis ({period_name})")
-    total_revenue_for_period = metrics['daily_total_revenue'] * period_multiplier
     
-    # --- DEFINITIVE FIX for UnboundLocalError ---
-    # Calculate all margin variables before creating columns
+    # --- DEFINITIVE FIX for UnboundLocalError: All calculations are now done *before* the columns are created ---
+    total_revenue_for_period = metrics['daily_total_revenue'] * period_multiplier
     gm = metrics['daily_gm'] * period_multiplier
     cm = metrics['daily_cm'] * period_multiplier
     ebitda = metrics['daily_ebitda'] * period_multiplier
     
     daily_dep = metrics['annual_depreciation'] / metrics['annual_production_days'] if metrics['annual_production_days'] > 0 else 0
-    daily_int = metrics['annual_interest'] / metrics['annual_production_days'] if metrics['annual_production_days'] > 0 else 0
     depreciation_for_period = daily_dep * period_multiplier
+    
+    daily_int = metrics['annual_interest'] / metrics['annual_production_days'] if metrics['annual_production_days'] > 0 else 0
     interest_for_period = daily_int * period_multiplier
     
     ebit_for_period = ebitda - depreciation_for_period
