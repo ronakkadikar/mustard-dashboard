@@ -189,6 +189,36 @@ all_inputs = {
 }
 metrics = calculate_all_metrics(all_inputs)
 
+# ... (your existing code before the main display section) ...
+
+# --- Main Dashboard Display ---
+st.subheader("Pungency Compliance")
+if "🔴" in metrics["pungency_recommendation"]: st.warning(metrics["pungency_recommendation"])
+elif "🟢" in metrics["pungency_recommendation"]: st.success(metrics["pungency_recommendation"])
+else: st.info(metrics["pungency_recommendation"])
+st.divider()
+
+st.subheader("Financial & Operational Analysis")
+
+selected_tab = st.radio("Select View:", options=["📊 Daily View", "📅 Monthly View", "🗓️ Annual View"], key='active_tab', horizontal=True, label_visibility="collapsed")
+
+# --- Wrap the display logic in a spinner ---
+with st.spinner("Calculating results..."): # This line added
+    # --- PNL Display Function (to be called for each tab) ---
+    def display_pnl(period_multiplier, period_name):
+        # ... (rest of your display_pnl function as is) ...
+        pass # Placeholder for the rest of your display_pnl code
+
+    if selected_tab == "📊 Daily View":
+        display_pnl(1, "Daily")
+    elif selected_tab == "📅 Monthly View":
+        display_pnl(metrics['production_days_per_month'], "Monthly")
+    elif selected_tab == "🗓️ Annual View":
+        display_pnl(metrics['annual_production_days'], "Annual")
+
+# ... (rest of your code after the display section) ...
+
+
 # --- Main Dashboard Display ---
 st.subheader("Pungency Compliance")
 if "🔴" in metrics["pungency_recommendation"]: st.warning(metrics["pungency_recommendation"])
