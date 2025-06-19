@@ -49,7 +49,6 @@ with st.sidebar:
         salt_cost_per_kg = st.number_input("Salt Cost (₹/kg)", value=5.0)
     with st.expander("Capex, Tax & Financing", expanded=True):
         capex = st.number_input("Capex (₹)", value=200000000.0)
-        # --- NEW: Equity Slider for Capex ---
         equity_in_capex_pct = st.slider("Equity % in Capex", 0, 100, 100, help="Set the percentage of Capex funded by equity. The rest is debt.")
         depreciation_years = st.number_input("Depreciation Period (Years)", min_value=1, value=15)
         tax_rate_pct = st.slider("Tax Rate (%)", 0, 50, 25)
@@ -130,7 +129,6 @@ def calculate_all_metrics(inputs):
     debt_funded_capex = capex * (1 - equity_in_capex_pct/100)
     interest_on_capex_debt = debt_funded_capex * (main_financing_rate_pa/100)
     interest_on_hoard = financed_rm_hoard_value * (warehouse_finance_rate_pa/100)
-    # Assume Net WC is also financed at the main rate
     interest_on_net_wc = net_wc_requirement * (main_financing_rate_pa/100)
     annual_interest = interest_on_capex_debt + interest_on_hoard + interest_on_net_wc
     
@@ -230,20 +228,29 @@ def display_pnl(period_multiplier, period_name):
     st.markdown("---")
 
     st.markdown(f"##### Full Margin Analysis ({period_name})")
-    col1, col2 = st.columns(2)
     total_revenue_for_period = metrics['daily_total_revenue'] * period_multiplier
+    
+    # --- FIX for UnboundLocalError ---
+    # Calculate all margin variables before creating columns
+    gm = metrics['daily_gm'] * period_multiplier
+    cm = metrics['daily_cm'] * period_multiplier
+    ebitda = metrics['daily_ebitda'] * period_multiplier
+    
+    daily_dep = metrics['annual_depreciation'] / metrics['annual_production_days'] if metrics['annual_production_days'] > 0 else 0
+    daily_int = metrics['annual_interest'] / metrics['annual_production_days'] if metrics['annual_production_days'] > 0 else 0
+    depreciation_for_period = daily_dep * period_multiplier
+    interest_for_period = daily_int * period_multiplier
+    ebit_for_period = ebitda - depreciation_for_period
+    pbt = ebit_for_period - interest_for_period
+    tax = max(0, pbt * (metrics['tax_rate_pct']/100))
+    pat = pbt - tax
+    
+    col1, col2 = st.columns(2)
     with col1:
-        gm, cm, ebitda = metrics['daily_gm']*period_multiplier, metrics['daily_cm']*period_multiplier, metrics['daily_ebitda']*period_multiplier
         st.markdown(f"**Gross Margin (GM):** <br>₹ {format_indian(gm)} `({(gm/total_revenue_for_period*100 if total_revenue_for_period > 0 else 0):.1f}%)`", unsafe_allow_html=True)
         st.markdown(f"**Contribution Margin (CM):** ❓<br>₹ {format_indian(cm)} `({(cm/total_revenue_for_period*100 if total_revenue_for_period > 0 else 0):.1f}%)`", unsafe_allow_html=True, help=f"CM = GM - Processing Cost (₹ {format_indian(metrics['daily_processing_cost']*period_multiplier)})")
         st.markdown(f"**EBITDA:** ❓<br>₹ {format_indian(ebitda)} `({(ebitda/total_revenue_for_period*100 if total_revenue_for_period > 0 else 0):.1f}%)`", unsafe_allow_html=True, help=f"EBITDA = CM - Other Var. Costs (₹ {format_indian(metrics['daily_variable_cost']*period_multiplier)}) - Other Fixed Exp. (₹ {format_indian(metrics['daily_other_expenses']*period_multiplier)})")
     with col2:
-        daily_dep, daily_int = (metrics['annual_depreciation']/metrics['annual_production_days'] if metrics['annual_production_days']>0 else 0), (metrics['annual_interest']/metrics['annual_production_days'] if metrics['annual_production_days']>0 else 0)
-        depreciation_for_period, interest_for_period = daily_dep * period_multiplier, daily_int * period_multiplier
-        ebit_for_period = ebitda - depreciation_for_period
-        pbt = ebit_for_period - interest_for_period
-        tax = max(0, pbt * (metrics['tax_rate_pct']/100))
-        pat = pbt - tax
         st.markdown(f"**Depreciation:**<br>₹ {format_indian(depreciation_for_period)}", unsafe_allow_html=True)
         st.markdown(f"**EBIT (Earnings Before Interest & Tax):**<br>₹ {format_indian(ebit_for_period)}", unsafe_allow_html=True)
         st.markdown(f"**Interest:**<br>₹ {format_indian(interest_for_period)}", unsafe_allow_html=True)
@@ -313,3 +320,4 @@ with st.expander("ℹ️ Click here to see key calculation logic"):
     """)
 st.markdown("---")
 st.success("Dashboard code is complete and has been fully executed.")
+
