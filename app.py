@@ -30,46 +30,46 @@ with st.sidebar:
         seed_input_mt = st.number_input("Daily Seed Input (MT)", value=192.0)
         kachi_ghani_yield_pct = st.slider("Kachi Ghani Oil Yield (%)", 0, 100, 18)
         expeller_yield_pct = st.slider("Expeller Oil Yield (%)", 0, 100, 15)
-        seed_purchase_price = st.number_input("Seed Purchase Price (₹/MT)", value=54000)
-        oil_blend_sell_price = st.number_input("Oil Blend Sell Price (₹/MT)", value=141000)
-        moc_sell_price = st.number_input("MoC Sell Price (₹/MT)", value=22000)
+        seed_purchase_price = st.number_input("Seed Purchase Price (₹/MT)", value=50000.0)
+        oil_blend_sell_price = st.number_input("Oil Blend Sell Price (₹/MT)", value=141000.0)
+        moc_sell_price = st.number_input("MoC Sell Price (₹/MT)", value=22000.0)
     with st.expander("Costs & Expenses", expanded=True):
-        processing_cost_per_mt = st.number_input("Processing Cost (₹/MT of Seed)", value=2000)
-        other_variable_costs_per_mt = st.number_input("Other Variable Costs (₹/MT of Seed)", value=500)
-        other_expenses_daily = st.number_input("Other Fixed Expenses (₹/day)", value=45000)
-        production_days_per_month = st.number_input("Production Days per Month", value=24)
+        processing_cost_per_mt = st.number_input("Processing Cost (₹/MT of Seed)", value=2500.0)
+        other_variable_costs_per_mt = st.number_input("Other Variable Costs (₹/MT of Seed)", value=0.0)
+        other_expenses_daily = st.number_input("Other Fixed Expenses (₹/day)", value=45000.0)
+        production_days_per_month = st.number_input("Production Days per Month", value=24.0)
     with st.expander("Pungency & MoC Enhancement", expanded=True):
-        kachi_ghani_pungency = st.slider("Kachi Ghani Oil Pungency (%)", 0.0, 1.0, 0.38, step=0.01)
+        kachi_ghani_pungency = st.slider("Kachi Ghani Oil Pungency (%)", 0.0, 1.0, 0.4, step=0.01)
         expeller_oil_pungency = st.slider("Expeller Oil Pungency (%)", 0.0, 1.0, 0.12, step=0.01)
-        expeller_oil_sell_price = st.number_input("Expeller Oil Sell Price (₹/MT)", value=136000)
-        market_bought_oil_price = st.number_input("Market-Bought Oil Price (₹/MT)", value=132000)
+        expeller_oil_sell_price = st.number_input("Expeller Oil Sell Price (₹/MT)", value=136000.0)
+        market_bought_oil_price = st.number_input("Market-Bought Oil Price (₹/MT)", value=132000.0)
         water_added_pct = st.slider("Water Added to MoC (% of seed)", 0, 10, 2)
-        water_cost_per_kg = st.number_input("Water Cost (₹/kg)", value=1)
+        water_cost_per_kg = st.number_input("Water Cost (₹/kg)", value=1.0)
         salt_added_pct = st.slider("Salt Added to MoC (% of seed)", 0, 10, 3)
-        salt_cost_per_kg = st.number_input("Salt Cost (₹/kg)", value=5)
+        salt_cost_per_kg = st.number_input("Salt Cost (₹/kg)", value=5.0)
     with st.expander("Capex, Tax & Financing", expanded=True):
-        capex = st.number_input("Capex (₹)", value=190000000)
-        depreciation_years = st.number_input("Depreciation Period (Years)", min_value=1, value=15)
+        capex = st.number_input("Capex (₹)", value=200000000.0)
+        depreciation_years = st.number_input("Depreciation Period (Years)", min_value=1, value=15.0)
         tax_rate_pct = st.slider("Tax Rate (%)", 0, 50, 25)
-        other_assets = st.number_input("Other Assets (₹)", value=0)
-        warehouse_finance_rate_pa = st.slider("Warehouse Finance Interest Rate (% p.a.)", 0.0, 25.0, 12.0, help="Interest for financed RM Hoard")
-        main_financing_rate_pa = st.slider("Main Financing Cost Interest Rate (% p.a.)", 0.0, 25.0, 12.0, help="Interest for Capex and remaining WC")
-        rm_hoard_financed_pct = st.slider("% of Hoarded RM Financed", 0, 100, 80)
+        other_assets = st.number_input("Other Assets (₹)", value=0.0)
+        warehouse_finance_rate_pa = st.slider("Warehouse Finance Interest Rate (% p.a.)", 0.0, 25.0, 10.0, help="Interest for financed RM Hoard")
+        main_financing_rate_pa = st.slider("Main Financing Cost Interest Rate (% p.a.)", 0.0, 25.0, 10.0, help="Interest for Capex and remaining WC")
+        rm_hoard_financed_pct = st.slider("% of Hoarded RM Financed", 0, 100, 0)
     with st.expander("Working Capital Cycles", expanded=True):
-        rm_hoard_months = st.number_input("Raw Material Hoard (months)", value=6)
-        hoarded_rm_rate = st.number_input("Hoarded RM Rate (₹/MT)", value=53500)
-        rm_safety_stock_days = st.number_input("RM Safety Stock (days)", value=48)
-        fg_oil_safety_days = st.number_input("FG (Oil) Safety Stock (days)", value=15)
-        fg_moc_safety_days = st.number_input("FG (MoC) Safety Stock (days)", value=4)
-        oil_debtor_days = st.number_input("Oil Debtor Cycle (days)", value=5)
-        moc_debtor_days = st.number_input("MoC Debtor Cycle (days)", value=5)
-        creditor_days = st.number_input("Creditors Days", value=3)
+        rm_hoard_months = st.number_input("Raw Material Hoard (months)", value=0.0)
+        hoarded_rm_rate = st.number_input("Hoarded RM Rate (₹/MT)", value=50000.0)
+        rm_safety_stock_days = st.number_input("RM Safety Stock (days)", value=48.0)
+        fg_oil_safety_days = st.number_input("FG (Oil) Safety Stock (days)", value=15.0)
+        fg_moc_safety_days = st.number_input("FG (MoC) Safety Stock (days)", value=4.0)
+        oil_debtor_days = st.number_input("Oil Debtor Cycle (days)", value=5.0)
+        moc_debtor_days = st.number_input("MoC Debtor Cycle (days)", value=5.0)
+        creditor_days = st.number_input("Creditors Days", value=5.0)
     with st.expander("🏭 Solvex Plant Synergy Inputs", expanded=False):
         moc_consumed_perc = st.slider("% of MOC Consumed In-House", 0, 100, 100)
-        logistics_saved_per_ton = st.number_input("Logistics Saved (₹/Ton of MOC)", value=400)
-        labor_saved_nos = st.number_input("Labor Headcount Saved (Daily)", value=4)
-        labor_cost_per_head_daily = st.number_input("Cost per Labor Head (₹/Day)", value=550)
-        brokerage_saved_per_ton = st.number_input("Brokerage Saved (₹/Ton of MOC)", value=150)
+        logistics_saved_per_ton = st.number_input("Logistics Saved (₹/Ton of MOC)", value=400.0)
+        labor_saved_nos = st.number_input("Labor Headcount Saved (Daily)", value=4.0)
+        labor_cost_per_head_daily = st.number_input("Cost per Labor Head (₹/Day)", value=550.0)
+        brokerage_saved_per_ton = st.number_input("Brokerage Saved (₹/Ton of MOC)", value=150.0)
 
 # --- Calculation Engine (Triple-Verified & Final) ---
 @st.cache_data
@@ -99,9 +99,14 @@ def calculate_all_metrics(inputs):
     enhanced_moc_mt = (seed_input_mt * moc_base_yield) + water_added_mt + salt_added_mt
     daily_revenue_oil_blend, daily_revenue_expeller_separate, daily_revenue_moc = final_oil_blend_mt*oil_blend_sell_price, exp_oil_sold_separately_mt*expeller_oil_sell_price, enhanced_moc_mt*moc_sell_price
     daily_total_revenue = daily_revenue_oil_blend + daily_revenue_expeller_separate + daily_revenue_moc
-    daily_cogs = (seed_input_mt*seed_purchase_price) + (market_oil_to_add_mt*market_bought_oil_price) + (water_added_mt*1000*water_cost_per_kg) + (salt_added_mt*1000*salt_cost_per_kg)
-    daily_gm, daily_processing_cost = daily_total_revenue - daily_cogs, seed_input_mt*processing_cost_per_mt
-    daily_cm, daily_variable_cost = daily_gm - daily_processing_cost, seed_input_mt*other_variable_costs_per_mt
+    cost_seed = seed_input_mt * seed_purchase_price
+    cost_market_oil = market_oil_to_add_mt * market_bought_oil_price
+    cost_moc_enhancement = (water_added_mt*1000*water_cost_per_kg) + (salt_added_mt*1000*salt_cost_per_kg)
+    daily_cogs = cost_seed + cost_market_oil + cost_moc_enhancement
+    daily_gm = daily_total_revenue - daily_cogs
+    daily_processing_cost = seed_input_mt * processing_cost_per_mt
+    daily_cm = daily_gm - daily_processing_cost
+    daily_variable_cost = seed_input_mt * other_variable_costs_per_mt
     daily_ebitda = daily_cm - daily_variable_cost - other_expenses_daily
     monthly_seed_consumption = seed_input_mt * production_days_per_month
     rm_hoarded_value = monthly_seed_consumption*rm_hoard_months*hoarded_rm_rate
@@ -157,11 +162,31 @@ def calculate_all_metrics(inputs):
         "roce_pat": roce_pat, "roce_ebitda": roce_ebitda,
         "roce_pat_with_synergy": roce_pat_with_synergy, "roce_ebitda_with_synergy": roce_ebitda_with_synergy,
         "daily_solvex_saving": daily_solvex_saving,
+        "market_oil_to_add_mt": market_oil_to_add_mt, "water_added_mt": water_added_mt, "salt_added_mt": salt_added_mt,
+        "cost_seed": cost_seed, "cost_market_oil": cost_market_oil, "cost_moc_enhancement": cost_moc_enhancement,
     }
 
 # --- Collect Inputs & Run Calculation Engine ---
-input_dict = {k: v for k, v in locals().items() if isinstance(v, (int, float, str)) and not k.startswith('_')}
-metrics = calculate_all_metrics(input_dict)
+# Create a dictionary of all sidebar inputs to pass to the calculation function
+all_inputs = {
+    "seed_input_mt": seed_input_mt, "kachi_ghani_yield_pct": kachi_ghani_yield_pct, "expeller_yield_pct": expeller_yield_pct,
+    "seed_purchase_price": seed_purchase_price, "oil_blend_sell_price": oil_blend_sell_price, "moc_sell_price": moc_sell_price,
+    "processing_cost_per_mt": processing_cost_per_mt, "other_variable_costs_per_mt": other_variable_costs_per_mt,
+    "other_expenses_daily": other_expenses_daily, "production_days_per_month": production_days_per_month,
+    "kachi_ghani_pungency": kachi_ghani_pungency, "expeller_oil_pungency": expeller_oil_pungency,
+    "expeller_oil_sell_price": expeller_oil_sell_price, "market_bought_oil_price": market_bought_oil_price,
+    "water_added_pct": water_added_pct, "water_cost_per_kg": water_cost_per_kg,
+    "salt_added_pct": salt_added_pct, "salt_cost_per_kg": salt_cost_per_kg,
+    "capex": capex, "depreciation_years": depreciation_years, "tax_rate_pct": tax_rate_pct, "other_assets": other_assets,
+    "warehouse_finance_rate_pa": warehouse_finance_rate_pa, "main_financing_rate_pa": main_financing_rate_pa,
+    "rm_hoard_financed_pct": rm_hoard_financed_pct, "rm_hoard_months": rm_hoard_months, "hoarded_rm_rate": hoarded_rm_rate,
+    "rm_safety_stock_days": rm_safety_stock_days, "fg_oil_safety_days": fg_oil_safety_days, "fg_moc_safety_days": fg_moc_safety_days,
+    "oil_debtor_days": oil_debtor_days, "moc_debtor_days": moc_debtor_days, "creditor_days": creditor_days,
+    "moc_consumed_perc": moc_consumed_perc, "logistics_saved_per_ton": logistics_saved_per_ton,
+    "labor_saved_nos": labor_saved_nos, "labor_cost_per_head_daily": labor_cost_per_head_daily,
+    "brokerage_saved_per_ton": brokerage_saved_per_ton
+}
+metrics = calculate_all_metrics(all_inputs)
 
 # --- Main Dashboard Display ---
 st.subheader("Pungency Compliance")
@@ -174,6 +199,7 @@ st.subheader("Financial & Operational Analysis")
 
 selected_tab = st.radio("Select View:", options=["📊 Daily View", "📅 Monthly View", "🗓️ Annual View"], key='active_tab', horizontal=True, label_visibility="collapsed")
 
+# --- PNL Display Function (to be called for each tab) ---
 def display_pnl(period_multiplier, period_name):
     st.markdown(f"##### Production & Revenue ({period_name})")
     c1, c2, c3, c4 = st.columns(4)
@@ -183,6 +209,23 @@ def display_pnl(period_multiplier, period_name):
     c4.markdown(f"**Total Revenue:**<br><p style='font-size: 20px;'>₹ {format_indian(metrics['daily_total_revenue'] * period_multiplier)}</p>", unsafe_allow_html=True)
     st.markdown("---")
     
+    # --- NEW: Cost of Goods Sold (COGS) Breakdown Section ---
+    st.markdown(f"##### Cost of Goods Sold (COGS) Breakdown ({period_name})")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("**Component Quantities**")
+        st.markdown(f"- Seed Consumed: {format_indian(metrics['seed_input_mt'] * period_multiplier)} MT")
+        st.markdown(f"- Market Oil Added: {format_indian(metrics['market_oil_to_add_mt'] * period_multiplier)} MT")
+        st.markdown(f"- Water Added: {format_indian(metrics['water_added_mt'] * period_multiplier)} MT")
+        st.markdown(f"- Salt Added: {format_indian(metrics['salt_added_mt'] * period_multiplier)} MT")
+    with col2:
+        st.markdown("**Component Values**")
+        st.markdown(f"- Seed Cost: ₹ {format_indian(metrics['cost_seed'] * period_multiplier)}")
+        st.markdown(f"- Market Oil Cost: ₹ {format_indian(metrics['cost_market_oil'] * period_multiplier)}")
+        st.markdown(f"- MoC Enhancement Cost: ₹ {format_indian(metrics['cost_moc_enhancement'] * period_multiplier)}")
+        st.markdown(f"**Total COGS: ₹ {format_indian(metrics['daily_cogs'] * period_multiplier)}**")
+    st.markdown("---")
+
     st.markdown(f"##### Full Margin Analysis ({period_name})")
     col1, col2 = st.columns(2)
     total_revenue_for_period = metrics['daily_total_revenue'] * period_multiplier
@@ -246,6 +289,7 @@ with savings_col:
 
 with st.expander("ℹ️ Click here to see key calculation logic"):
     st.markdown("""
+    - **Cost of Goods Sold (COGS):** `COGS = Seed Cost + Market Oil Cost + MoC Enhancement Cost`
     - **Net Working Capital Requirement:** `Net WC = (Total Inventory + Total Debtors - Trade Creditors) - Financed Inventory`
     - **Interest Calculation:** 
       - `Interest on Hoard = Financed Inventory Value * Warehouse Finance Rate`
@@ -260,3 +304,4 @@ with st.expander("ℹ️ Click here to see key calculation logic"):
 # --- Code Completion Marker ---
 st.markdown("---")
 st.success("Dashboard code is complete and has been fully executed.")
+
