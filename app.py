@@ -49,7 +49,7 @@ with st.sidebar:
         salt_cost_per_kg = st.number_input("Salt Cost (₹/kg)", value=5.0)
     with st.expander("Capex, Tax & Financing", expanded=True):
         capex = st.number_input("Capex (₹)", value=200000000.0)
-        depreciation_years = st.number_input("Depreciation Period (Years)", min_value=1, value=15) # Corrected type
+        depreciation_years = st.number_input("Depreciation Period (Years)", min_value=1, value=15)
         tax_rate_pct = st.slider("Tax Rate (%)", 0, 50, 25)
         other_assets = st.number_input("Other Assets (₹)", value=0.0)
         warehouse_finance_rate_pa = st.slider("Warehouse Finance Interest Rate (% p.a.)", 0.0, 25.0, 10.0, help="Interest for financed RM Hoard")
@@ -164,6 +164,10 @@ def calculate_all_metrics(inputs):
         "daily_solvex_saving": daily_solvex_saving,
         "market_oil_to_add_mt": market_oil_to_add_mt, "water_added_mt": water_added_mt, "salt_added_mt": salt_added_mt,
         "cost_seed": cost_seed, "cost_market_oil": cost_market_oil, "cost_moc_enhancement": cost_moc_enhancement,
+        # New: Interest Breakdown components
+        "interest_on_hoard": interest_on_hoard, "interest_on_main_capital": interest_on_main_capital,
+        # New: Inventory Bifurcation components
+        "inventory_rm": inventory_rm, "inventory_fg": inventory_fg
     }
 
 # --- Collect Inputs & Run Calculation Engine ---
@@ -254,6 +258,16 @@ def display_pnl(period_multiplier, period_name):
         st.markdown(f"**Profit After Tax (PAT):**<br>₹ {format_indian(pat)} `({(pat/total_revenue_for_period*100 if total_revenue_for_period > 0 else 0):.1f}%)`", unsafe_allow_html=True)
     st.markdown("---")
     
+    # --- NEW: Detailed Interest Breakdown ---
+    st.markdown(f"##### Interest Breakdown ({period_name})")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown(f"**Interest on Hoarded RM:**<br>₹ {format_indian(metrics['interest_on_hoard'] / metrics['annual_production_days'] * period_multiplier)}", unsafe_allow_html=True)
+    with col2:
+        st.markdown(f"**Interest on Main Capital:**<br>₹ {format_indian(metrics['interest_on_main_capital'] / metrics['annual_production_days'] * period_multiplier)}", unsafe_allow_html=True)
+    st.markdown("---")
+
+
     st.markdown(f"##### Key Financial Ratios")
     c1, c2 = st.columns(2)
     with c1:
@@ -281,6 +295,12 @@ with wc_col:
     c1.markdown(f"**Total Inventory:**<br><p style='font-size: 20px;'>₹ {format_indian(metrics['total_inventory'])}</p>", unsafe_allow_html=True)
     c2.markdown(f"**Total Debtors:**<br><p style='font-size: 20px;'>₹ {format_indian(metrics['total_debtors'])}</p>", unsafe_allow_html=True)
     c3.markdown(f"**Trade Creditors:**<br><p style='font-size: 20px;'>₹ {format_indian(metrics['trade_creditors'])}</p>", unsafe_allow_html=True)
+    st.markdown("---") # Separator for inventory breakdown
+    c1, c2 = st.columns(2)
+    c1.markdown(f"**Hoarded Raw Material:**<br><p style='font-size: 20px;'>₹ {format_indian(metrics['inventory_rm'])}</p>", unsafe_allow_html=True)
+    c2.markdown(f"**Finished Goods Stock:**<br><p style='font-size: 20px;'>₹ {format_indian(metrics['inventory_fg'])}</p>", unsafe_allow_html=True)
+
+
     st.markdown(f"**Financed Inventory (Credit):**<br><p style='font-size: 20px; color: #FF4B4B;'>₹ {format_indian(metrics['financed_rm_hoard_value'])}</p>", unsafe_allow_html=True, help="This is treated as a credit, reducing your net WC requirement.")
     st.markdown(f"**Net WC Requirement:**<br><p style='font-size: 24px; font-weight: bold;'>₹ {format_indian(metrics['net_wc_requirement'])}</p>", unsafe_allow_html=True)
     st.markdown(f"**Capex:**<br><p style='font-size: 24px; font-weight: bold;'>₹ {format_indian(metrics['capex'])}</p>", unsafe_allow_html=True)
@@ -293,6 +313,9 @@ with savings_col:
 with st.expander("ℹ️ Click here to see key calculation logic"):
     st.markdown("""
     - **Cost of Goods Sold (COGS):** `COGS = Seed Cost + Market Oil Cost + MoC Enhancement Cost`
+    - **Inventory Bifurcation:**
+      - `Hoarded Raw Material`: Value of RM hoarded based on months and safety stock.
+      - `Finished Goods Stock`: Value of FG (Oil + MoC) based on safety stock days.
     - **Net Working Capital Requirement:** `Net WC = (Total Inventory + Total Debtors - Trade Creditors) - Financed Inventory`
     - **Interest Calculation:** 
       - `Interest on Hoard = Financed Inventory Value * Warehouse Finance Rate`
