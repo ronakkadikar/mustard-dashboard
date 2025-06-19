@@ -21,7 +21,7 @@ def format_indian(num):
     return '-' + formatted_num if num < 0 else formatted_num
 
 st.title("🛢️ Mustard Oil Financial & Operational Dashboard")
-st.markdown("An interactive dashboard for comprehensive analysis of a mustard oil processing business.")
+st.markdown("An interactive dashboard for comprehensive analysis of a mustard oil processing business, built to investment banking standards.")
 
 # --- Sidebar for All User Inputs ---
 with st.sidebar:
@@ -138,10 +138,14 @@ def calculate_all_metrics(inputs):
     annual_tax = max(0, annual_pbt * (tax_rate_pct/100))
     annual_pat = annual_pbt - annual_tax
     
-    # --- VERIFIED ROCE Calculation (EBIT and PAT basis) ---
+    # --- VERIFIED ROCE & ROE Calculation ---
     capital_employed = capex + net_wc_requirement + other_assets
     roce_pat = (annual_pat / capital_employed) * 100 if capital_employed != 0 else 0
     roce_ebit = (annual_ebit / capital_employed) * 100 if capital_employed != 0 else 0
+    
+    equity_funded_capex = capex * (equity_in_capex_pct/100)
+    shareholders_equity = equity_funded_capex + net_wc_requirement + other_assets
+    roe = (annual_pat / shareholders_equity) * 100 if shareholders_equity > 0 else 0
     
     moc_consumed_inhouse_mt = enhanced_moc_mt*(moc_consumed_perc/100)
     daily_solvex_saving = sum([moc_consumed_inhouse_mt*logistics_saved_per_ton, labor_saved_nos*labor_cost_per_head_daily, moc_consumed_inhouse_mt*brokerage_saved_per_ton])
@@ -150,7 +154,8 @@ def calculate_all_metrics(inputs):
     annual_ebit_with_synergy = annual_ebit + annual_solvex_saving
     roce_pat_with_synergy = (annual_pat_with_synergy / capital_employed) * 100 if capital_employed != 0 else 0
     roce_ebit_with_synergy = (annual_ebit_with_synergy / capital_employed) * 100 if capital_employed != 0 else 0
-    
+    roe_with_synergy = (annual_pat_with_synergy / shareholders_equity) * 100 if shareholders_equity > 0 else 0
+
     return {
         "seed_input_mt": seed_input_mt, "pungency_recommendation": pungency_recommendation, "final_oil_blend_mt": final_oil_blend_mt,
         "exp_oil_sold_separately_mt": exp_oil_sold_separately_mt, "enhanced_moc_mt": enhanced_moc_mt,
@@ -160,8 +165,8 @@ def calculate_all_metrics(inputs):
         "annual_interest": annual_interest, "annual_depreciation": annual_depreciation, "tax_rate_pct": tax_rate_pct, "annual_ebit": annual_ebit,
         "total_inventory": total_inventory, "total_debtors": total_debtors, "trade_creditors": trade_creditors,
         "financed_rm_hoard_value": financed_rm_hoard_value, "net_wc_requirement": net_wc_requirement, "capex": capex,
-        "roce_pat": roce_pat, "roce_ebit": roce_ebit,
-        "roce_pat_with_synergy": roce_pat_with_synergy, "roce_ebit_with_synergy": roce_ebit_with_synergy,
+        "roce_pat": roce_pat, "roce_ebit": roce_ebit, "roe": roe,
+        "roce_pat_with_synergy": roce_pat_with_synergy, "roce_ebit_with_synergy": roce_ebit_with_synergy, "roe_with_synergy": roe_with_synergy,
         "daily_solvex_saving": daily_solvex_saving,
         "market_oil_to_add_mt": market_oil_to_add_mt, "water_added_mt": water_added_mt, "salt_added_mt": salt_added_mt,
         "cost_seed": cost_seed, "cost_market_oil": cost_market_oil, "cost_moc_enhancement": cost_moc_enhancement,
@@ -170,24 +175,7 @@ def calculate_all_metrics(inputs):
     }
 
 # --- Collect Inputs & Run Calculation Engine ---
-all_inputs = {
-    "seed_input_mt": seed_input_mt, "kachi_ghani_yield_pct": kachi_ghani_yield_pct, "expeller_yield_pct": expeller_yield_pct,
-    "seed_purchase_price": seed_purchase_price, "oil_blend_sell_price": oil_blend_sell_price, "moc_sell_price": moc_sell_price,
-    "processing_cost_per_mt": processing_cost_per_mt, "other_variable_costs_per_mt": other_variable_costs_per_mt,
-    "other_expenses_daily": other_expenses_daily, "production_days_per_month": production_days_per_month,
-    "kachi_ghani_pungency": kachi_ghani_pungency, "expeller_oil_pungency": expeller_oil_pungency,
-    "expeller_oil_sell_price": expeller_oil_sell_price, "market_bought_oil_price": market_bought_oil_price,
-    "water_added_pct": water_added_pct, "water_cost_per_kg": water_cost_per_kg,
-    "salt_added_pct": salt_added_pct, "salt_cost_per_kg": salt_cost_per_kg,
-    "capex": capex, "equity_in_capex_pct": equity_in_capex_pct, "depreciation_years": depreciation_years, "tax_rate_pct": tax_rate_pct, "other_assets": other_assets,
-    "warehouse_finance_rate_pa": warehouse_finance_rate_pa, "main_financing_rate_pa": main_financing_rate_pa,
-    "rm_hoard_financed_pct": rm_hoard_financed_pct, "rm_hoard_months": rm_hoard_months, "hoarded_rm_rate": hoarded_rm_rate,
-    "rm_safety_stock_days": rm_safety_stock_days, "fg_oil_safety_days": fg_oil_safety_days, "fg_moc_safety_days": fg_moc_safety_days,
-    "oil_debtor_days": oil_debtor_days, "moc_debtor_days": moc_debtor_days, "creditor_days": creditor_days,
-    "moc_consumed_perc": moc_consumed_perc, "logistics_saved_per_ton": logistics_saved_per_ton,
-    "labor_saved_nos": labor_saved_nos, "labor_cost_per_head_daily": labor_cost_per_head_daily,
-    "brokerage_saved_per_ton": brokerage_saved_per_ton
-}
+all_inputs = {k: v for k, v in locals().items() if isinstance(v, (int, float, str)) and not k.startswith('_')}
 with st.spinner("Calculating results..."):
     metrics = calculate_all_metrics(all_inputs)
 
@@ -207,22 +195,18 @@ def display_pnl(period_multiplier, period_name):
     gm = metrics['daily_gm'] * period_multiplier
     cm = metrics['daily_cm'] * period_multiplier
     ebitda = metrics['daily_ebitda'] * period_multiplier
-    
     daily_dep = metrics['annual_depreciation'] / metrics['annual_production_days'] if metrics['annual_production_days'] > 0 else 0
     depreciation_for_period = daily_dep * period_multiplier
-    
     daily_int = metrics['annual_interest'] / metrics['annual_production_days'] if metrics['annual_production_days'] > 0 else 0
     interest_for_period = daily_int * period_multiplier
-    
     ebit_for_period = ebitda - depreciation_for_period
     pbt = ebit_for_period - interest_for_period
     tax = max(0, pbt * (metrics['tax_rate_pct']/100))
     pat = pbt - tax
-    
     interest_on_main_capital_period = metrics['interest_on_main_capital'] / metrics['annual_production_days'] * period_multiplier if metrics['annual_production_days'] > 0 else 0
     interest_on_hoard_period = metrics['interest_on_hoard'] / metrics['annual_production_days'] * period_multiplier if metrics['annual_production_days'] > 0 else 0
 
-    # --- Display Logic: Uses pre-calculated variables ---
+    # --- Display Logic: Uses pre-calculated variables and unique column names ---
     st.markdown(f"##### Production & Revenue ({period_name})")
     rev_c1, rev_c2, rev_c3, rev_c4 = st.columns(4)
     rev_c1.markdown(f"**Total Seed Input:**<br> <p style='font-size: 20px;'>{format_indian(metrics['seed_input_mt'] * period_multiplier)} MT</p>", unsafe_allow_html=True)
@@ -267,15 +251,20 @@ def display_pnl(period_multiplier, period_name):
     st.markdown("---")
 
     st.markdown(f"##### Key Financial Ratios (Annualized)")
-    roce_c1, roce_c2 = st.columns(2)
+    roce_c1, roce_c2, roe_c1 = st.columns(3)
     with roce_c1:
-        st.markdown("**Standard ROCE**")
+        st.markdown("**Return on Capital Employed (ROCE)**")
         st.metric("ROCE (EBIT Basis)", f"{metrics['roce_ebit']:.2f}%")
         st.metric("ROCE (PAT Basis)", f"{metrics['roce_pat']:.2f}%")
     with roce_c2:
-        st.markdown("**ROCE including Solvex Synergy**")
+        st.markdown("**ROCE (with Synergy)**")
         st.metric("ROCE (EBIT Basis)", f"{metrics['roce_ebit_with_synergy']:.2f}%")
         st.metric("ROCE (PAT Basis)", f"{metrics['roce_pat_with_synergy']:.2f}%")
+    with roe_c1:
+        st.markdown("**Return on Equity (ROE)**")
+        st.metric("Standard ROE", f"{metrics['roe']:.2f}%")
+        st.metric("ROE (with Synergy)", f"{metrics['roe_with_synergy']:.2f}%")
+
 
 if selected_tab == "📊 Daily View": display_pnl(1, "Daily")
 elif selected_tab == "📅 Monthly View": display_pnl(metrics['production_days_per_month'], "Monthly")
@@ -315,7 +304,10 @@ with st.expander("ℹ️ Click here to see key calculation logic"):
     - **Return on Capital Employed (ROCE):** Measures operational efficiency. `EBIT = EBITDA - Depreciation`.
       - `Capital Employed = Capex + Net WC Requirement + Other Assets`
       - `Standard ROCE (EBIT Basis) = Annual EBIT / Capital Employed`
-    - **Synergy Impact:** `ROCE with Synergy` adds the `Annual Solvex Savings` to the numerator (EBIT or PAT).
+    - **Return on Equity (ROE):** Measures return to shareholders.
+      - `Shareholder's Equity = (Capex * Equity %) + Net WC Requirement + Other Assets`
+      - `Standard ROE = Annual PAT / Shareholder's Equity`
+    - **Synergy Impact:** `ROCE/ROE with Synergy` adds the `Annual Solvex Savings` to the numerator (EBIT or PAT).
     """)
 st.markdown("---")
 st.success("Dashboard code is complete and has been fully executed.")
