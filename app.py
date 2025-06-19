@@ -49,8 +49,7 @@ with st.sidebar:
         salt_cost_per_kg = st.number_input("Salt Cost (₹/kg)", value=5.0)
     with st.expander("Capex, Tax & Financing", expanded=True):
         capex = st.number_input("Capex (₹)", value=200000000.0)
-        # FIX: Ensure value is of type int or matches min_value type
-        depreciation_years = st.number_input("Depreciation Period (Years)", min_value=1, value=15)
+        depreciation_years = st.number_input("Depreciation Period (Years)", min_value=1, value=15) # Corrected type
         tax_rate_pct = st.slider("Tax Rate (%)", 0, 50, 25)
         other_assets = st.number_input("Other Assets (₹)", value=0.0)
         warehouse_finance_rate_pa = st.slider("Warehouse Finance Interest Rate (% p.a.)", 0.0, 25.0, 10.0, help="Interest for financed RM Hoard")
@@ -187,37 +186,10 @@ all_inputs = {
     "labor_saved_nos": labor_saved_nos, "labor_cost_per_head_daily": labor_cost_per_head_daily,
     "brokerage_saved_per_ton": brokerage_saved_per_ton
 }
-metrics = calculate_all_metrics(all_inputs)
 
-# ... (your existing code before the main display section) ...
-
-# --- Main Dashboard Display ---
-st.subheader("Pungency Compliance")
-if "🔴" in metrics["pungency_recommendation"]: st.warning(metrics["pungency_recommendation"])
-elif "🟢" in metrics["pungency_recommendation"]: st.success(metrics["pungency_recommendation"])
-else: st.info(metrics["pungency_recommendation"])
-st.divider()
-
-st.subheader("Financial & Operational Analysis")
-
-selected_tab = st.radio("Select View:", options=["📊 Daily View", "📅 Monthly View", "🗓️ Annual View"], key='active_tab', horizontal=True, label_visibility="collapsed")
-
-# --- Wrap the display logic in a spinner ---
-with st.spinner("Calculating results..."): # This line added
-    # --- PNL Display Function (to be called for each tab) ---
-    def display_pnl(period_multiplier, period_name):
-        # ... (rest of your display_pnl function as is) ...
-        pass # Placeholder for the rest of your display_pnl code
-
-    if selected_tab == "📊 Daily View":
-        display_pnl(1, "Daily")
-    elif selected_tab == "📅 Monthly View":
-        display_pnl(metrics['production_days_per_month'], "Monthly")
-    elif selected_tab == "🗓️ Annual View":
-        display_pnl(metrics['annual_production_days'], "Annual")
-
-# ... (rest of your code after the display section) ...
-
+# --- Wrap the calculation in a spinner for better UX ---
+with st.spinner("Calculating results..."):
+    metrics = calculate_all_metrics(all_inputs)
 
 # --- Main Dashboard Display ---
 st.subheader("Pungency Compliance")
